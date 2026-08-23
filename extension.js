@@ -124,7 +124,7 @@ class UsageIndicator extends PanelMenu.Button {
             style_class: 'panel-status-menu-box',
             y_align: Clutter.ActorAlign.CENTER,
         });
-        const openAiIcon = Gio.FileIcon.new(Gio.File.new_for_path(
+        this._openAiIcon = Gio.FileIcon.new(Gio.File.new_for_path(
             GLib.build_filenamev([
                 extensionObject.path,
                 'icons',
@@ -132,7 +132,7 @@ class UsageIndicator extends PanelMenu.Button {
             ])
         ));
         this._panelIcon = new St.Icon({
-            gicon: openAiIcon,
+            gicon: this._openAiIcon,
             style_class: 'system-status-icon',
         });
         this._panelLabel = new St.Label({
@@ -228,7 +228,7 @@ class UsageIndicator extends PanelMenu.Button {
         });
         actions.add_child(this._actionButton('view-refresh-symbolic', _('Refresh'), () =>
             this._client.refresh()));
-        actions.add_child(this._actionButton('web-browser-symbolic', _('Open usage dashboard'), () => {
+        actions.add_child(this._actionButton(this._openAiIcon, _('Open usage dashboard'), () => {
             this.menu.close();
             Gio.AppInfo.launch_default_for_uri(DASHBOARD_URI, null);
         }));
@@ -252,14 +252,14 @@ class UsageIndicator extends PanelMenu.Button {
         return {actor: row.actor, value: valueLabel};
     }
 
-    _actionButton(iconName, label, callback) {
+    _actionButton(icon, label, callback) {
         const button = new St.Button({
             style_class: 'button codex-usage-action-button',
             accessible_name: label,
             can_focus: true,
         });
         button.set_child(new St.Icon({
-            icon_name: iconName,
+            ...(typeof icon === 'string' ? {icon_name: icon} : {gicon: icon}),
             icon_size: 16,
         }));
         button.connect('clicked', callback);
