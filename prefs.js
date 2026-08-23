@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
@@ -17,7 +17,7 @@ export default class CodexUsagePreferences extends ExtensionPreferences {
         const appearance = new Adw.PreferencesGroup({title: _('Panel')});
         const showIcon = new Adw.SwitchRow({
             title: _('Show icon'),
-            subtitle: _('Display a symbolic monitor icon beside the usage value'),
+            subtitle: _('Display the OpenAI icon beside the usage value'),
         });
         settings.bind('show-icon', showIcon, 'active', Gio.SettingsBindFlags.DEFAULT);
         appearance.add(showIcon);

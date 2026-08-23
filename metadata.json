@@ -1,9 +1,8 @@
 {
-  "description": "Show Codex rate limits and token usage in the GNOME top panel.",
+  "description": "Show Codex rate limits and token usage in the GNOME top panel. Requires a signed-in Codex CLI. Not affiliated with OpenAI.",
   "name": "Codex Usage",
   "settings-schema": "org.gnome.shell.extensions.codex-usage",
-  "shell-version": ["45", "46", "47", "48", "49", "50"],
+  "shell-version": ["50"],
   "url": "https://github.com/Exhabition/gnome-codex-usage",
-  "uuid": "codex-usage@local",
-  "version": 1
+  "uuid": "codex-usage@exhabition.github.io"
 }

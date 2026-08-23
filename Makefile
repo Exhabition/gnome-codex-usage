@@ -1,20 +1,21 @@
-UUID := codex-usage@local
+UUID := codex-usage@exhabition.github.io
 BUILD_DIR := build/$(UUID)
 SOURCES := metadata.json extension.js appServerClient.js prefs.js stylesheet.css \
-	icons/OpenAI-white-monoblossom.svg
+	icons/OpenAI-white-monoblossom.svg TRADEMARKS.md
 
 .PHONY: all pack install clean check smoke
 
 all: pack
 
 check:
-	glib-compile-schemas --strict schemas
+	glib-compile-schemas --strict --dry-run schemas
 	mkdir -p build
 	gnome-extensions pack --force --out-dir=build \
 		--extra-source=appServerClient.js \
 		--extra-source=icons \
 		--extra-source=README.md \
 		--extra-source=LICENSE \
+		--extra-source=TRADEMARKS.md \
 		.
 
 pack: check

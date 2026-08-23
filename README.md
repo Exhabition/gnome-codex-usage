@@ -20,7 +20,7 @@ value, while the popup contains details and quick actions.
 
 ## Requirements
 
-- GNOME Shell 45–50
+- GNOME Shell 50
 - A current `codex` CLI installation signed in with ChatGPT or another
   Codex-service-backed authentication mode
 
@@ -65,13 +65,13 @@ Then log out and back in if needed, and enable **Codex Usage** in the Extensions
 application, or run:
 
 ```sh
-gnome-extensions enable codex-usage@local
+gnome-extensions enable codex-usage@exhabition.github.io
 ```
 
 To install the generated package manually:
 
 ```sh
-gnome-extensions install --force build/codex-usage@local.shell-extension.zip
+gnome-extensions install --force build/codex-usage@exhabition.github.io.shell-extension.zip
 ```
 
 If GNOME Shell cannot find `codex`, open the extension preferences and set the
@@ -81,8 +81,8 @@ automatically.
 ## Development
 
 ```sh
-glib-compile-schemas --strict schemas
-gnome-extensions prefs codex-usage@local
+glib-compile-schemas --strict --dry-run schemas
+gnome-extensions prefs codex-usage@exhabition.github.io
 journalctl --user -f -o cat /usr/bin/gnome-shell
 ```
 
@@ -98,12 +98,13 @@ when the extension is disabled.
 
 ## License and attribution
 
-GPL-2.0-only. The UI concept is inspired by Vitals, which is also distributed
+GPL-2.0-or-later. The UI concept is inspired by Vitals, which is also distributed
 under GPL-2.0. This project is an independent implementation and includes none
 of Vitals' hardware sensor code.
 
 The OpenAI Blossom is a trademark of OpenAI and is used under the
-[OpenAI Brand Guidelines](https://openai.com/brand/) to identify the OpenAI
-service this extension connects to. OpenAI does not sponsor, endorse, or
-maintain this project. The logo asset is included unmodified from OpenAI's
-official 2025 logo package.
+[OpenAI Brand Guidelines](https://openai.com/brand/) because this extension
+directly connects to the OpenAI Codex service. OpenAI does not sponsor, endorse,
+or maintain this project. The logo asset is included unmodified from OpenAI's
+official 2025 logo package and is not used as this project's own brand. See
+[TRADEMARKS.md](TRADEMARKS.md) for the packaged attribution notice.

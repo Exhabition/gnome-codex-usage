@@ -1,9 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
 const REQUEST_INITIALIZE = 0;
+const SHUTDOWN_GRACE_SECONDS = 2;
 
 export class AppServerClient {
     constructor({command = '', onData = null, onStatus = null} = {}) {
@@ -97,25 +98,71 @@ export class AppServerClient {
         this._generation++;
         this._pending.clear();
 
-        if (this._stdin) {
+        const stdin = this._stdin;
+        const stdout = this._stdout;
+        const process = this._process;
+
+        this._stdin = null;
+        this._stdout = null;
+        this._process = null;
+
+        if (stdin) {
             try {
-                this._stdin.close(null);
+                stdin.close(null);
             } catch (_) {
                 // The app-server may already have closed the pipe.
             }
         }
 
-        if (this._process) {
+        if (stdout) {
             try {
-                this._process.send_signal(2);
+                stdout.close(null);
             } catch (_) {
-                this._process.force_exit();
+                // An outstanding asynchronous read may have closed the stream.
             }
         }
 
-        this._stdin = null;
-        this._stdout = null;
-        this._process = null;
+        if (process)
+            this._terminateProcess(process);
+    }
+
+    _terminateProcess(process) {
+        let timeoutId = GLib.timeout_add_seconds(
+            GLib.PRIORITY_DEFAULT,
+            SHUTDOWN_GRACE_SECONDS,
+            () => {
+                timeoutId = 0;
+                try {
+                    process.force_exit();
+                } catch (_) {
+                    // The process exited between the timeout and force_exit().
+                }
+                return GLib.SOURCE_REMOVE;
+            }
+        );
+
+        process.wait_async(null, (subprocess, result) => {
+            try {
+                subprocess.wait_finish(result);
+            } catch (_) {
+                // Shutdown is best-effort and the process is no longer usable.
+            }
+
+            if (timeoutId) {
+                GLib.source_remove(timeoutId);
+                timeoutId = 0;
+            }
+        });
+
+        try {
+            process.send_signal(2);
+        } catch (_) {
+            try {
+                process.force_exit();
+            } catch (_) {
+                // The process has already exited.
+            }
+        }
     }
 
     _resolveCommand() {
@@ -168,11 +215,11 @@ export class AppServerClient {
             return;
 
         this._stdout.read_line_async(GLib.PRIORITY_DEFAULT, null, (stream, result) => {
-            if (generation !== this._generation)
-                return;
-
             try {
                 const [line] = stream.read_line_finish_utf8(result);
+                if (generation !== this._generation)
+                    return;
+
                 if (line === null) {
                     this._emitStatus('error', 'Codex app-server disconnected.');
                     this.stop();
@@ -182,6 +229,9 @@ export class AppServerClient {
                 this._handleLine(line);
                 this._readNextLine(generation);
             } catch (error) {
+                if (generation !== this._generation)
+                    return;
+
                 this._emitStatus('error', `Unable to read Codex data: ${error.message}`);
                 this.stop();
             }
