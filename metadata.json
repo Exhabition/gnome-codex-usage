@@ -1,0 +1,9 @@
+{
+  "description": "Show Codex rate limits and token usage in the GNOME top panel.",
+  "name": "Codex Usage",
+  "settings-schema": "org.gnome.shell.extensions.codex-usage",
+  "shell-version": ["45", "46", "47", "48", "49", "50"],
+  "url": "https://github.com/Exhabition/gnome-codex-usage",
+  "uuid": "codex-usage@local",
+  "version": 1
+}
