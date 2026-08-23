@@ -89,6 +89,16 @@ export default class CodexUsagePreferences extends ExtensionPreferences {
         dashboard.connect('activated', () =>
             Gtk.UriLauncher.new('https://chatgpt.com/codex/settings/usage').launch(window, null, null));
         about.add(dashboard);
+
+        const repository = new Adw.ActionRow({
+            title: _('GitHub repository'),
+            subtitle: 'github.com/Exhabition/gnome-codex-usage',
+            activatable: true,
+        });
+        repository.add_suffix(new Gtk.Image({icon_name: 'external-link-symbolic'}));
+        repository.connect('activated', () =>
+            Gtk.UriLauncher.new('https://github.com/Exhabition/gnome-codex-usage').launch(window, null, null));
+        about.add(repository);
         page.add(about);
 
         window.add(page);
