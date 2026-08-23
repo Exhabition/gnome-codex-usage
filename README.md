@@ -5,6 +5,8 @@ top panel. Its interaction model is inspired by
 [Vitals](https://github.com/corecoding/Vitals): the panel holds the glanceable
 value, while the popup contains details and quick actions.
 
+![Codex Usage extension popup showing quota and token usage](static/preview.png)
+
 ## Features
 
 - Remaining or used percentage for the active Codex quota window
