@@ -13,7 +13,7 @@ import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/ex
 
 import {AppServerClient} from './appServerClient.js';
 
-const DASHBOARD_URI = 'https://chatgpt.com/codex/settings/usage';
+const DASHBOARD_URI = 'https://chatgpt.com/codex/cloud/settings/analytics';
 const PROGRESS_WIDTH = 260;
 
 function clamp(value, minimum, maximum) {
@@ -55,6 +55,26 @@ function formatReset(timestamp) {
             Math.ceil((remaining % 3600) / 60)
         );
     return _('resets in %dd %dh').format(
+        Math.floor(remaining / 86400),
+        Math.ceil((remaining % 86400) / 3600)
+    );
+}
+
+function formatRemaining(timestamp) {
+    if (!timestamp)
+        return '—';
+
+    const remaining = Math.max(0, timestamp - Math.floor(Date.now() / 1000));
+    if (remaining < 60)
+        return _('<1m');
+    if (remaining < 3600)
+        return _('%dm').format(Math.ceil(remaining / 60));
+    if (remaining < 86400)
+        return _('%dh %dm').format(
+            Math.floor(remaining / 3600),
+            Math.ceil((remaining % 3600) / 60)
+        );
+    return _('%dd %dh').format(
         Math.floor(remaining / 86400),
         Math.ceil((remaining % 86400) / 3600)
     );
@@ -154,6 +174,8 @@ class UsageIndicator extends PanelMenu.Button {
         this._settings.connectObject(
             'changed::show-icon', () => this._applyPanelPreferences(),
             'changed::panel-display', () => this._updatePanelLabel(),
+            'changed::visible-fields', () => this._applyFieldPreferences(),
+            'changed::field-order', () => this._applyFieldPreferences(),
             'changed::update-interval', () => this._resetTimer(),
             'changed::codex-command', () =>
                 this._client.restart(this._settings.get_string('codex-command')),
@@ -199,13 +221,18 @@ class UsageIndicator extends PanelMenu.Button {
         windowsItem.add_child(windows);
         this.menu.addMenuItem(windowsItem);
 
-        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        this._todayRow = this._addStatRow(_('Today'), '—');
-        this._weekRow = this._addStatRow(_('Last 7 days'), '—');
-        this._lifetimeRow = this._addStatRow(_('Lifetime'), '—');
-        this._streakRow = this._addStatRow(_('Current streak'), '—');
-        this._creditsRow = this._addStatRow(_('Credits remaining'), '—');
-        this._creditsRow.actor.hide();
+        this._statSeparator = new PopupMenu.PopupSeparatorMenuItem();
+        this.menu.addMenuItem(this._statSeparator);
+        this._statRows = {
+            today: this._addStatRow(_('Today'), '—'),
+            week: this._addStatRow(_('Last 7 days'), '—'),
+            lifetime: this._addStatRow(_('Lifetime'), '—'),
+            streak: this._addStatRow(_('Current streak'), '—'),
+            credits: this._addStatRow(_('Credits remaining'), '—'),
+            resets: this._addStatRow(_('Resets remaining'), '—'),
+            resetExpiry: this._addStatRow(_('Reset expiring in'), '—'),
+        };
+        this._applyFieldPreferences();
 
         this._errorItem = new PopupMenu.PopupBaseMenuItem({reactive: false});
         this._errorLabel = new St.Label({
@@ -249,7 +276,7 @@ class UsageIndicator extends PanelMenu.Button {
         });
         row.add_child(valueLabel);
         this.menu.addMenuItem(row);
-        return {actor: row.actor, value: valueLabel};
+        return {item: row, actor: row.actor, value: valueLabel};
     }
 
     _actionButton(icon, label, callback) {
@@ -285,24 +312,32 @@ class UsageIndicator extends PanelMenu.Button {
         const lastSevenDays = buckets.slice(-7).reduce((sum, bucket) => sum + (bucket.tokens ?? 0), 0);
         const summary = data.usage?.summary ?? {};
 
-        this._todayRow.value.text = _('%s tokens').format(formatTokens(today));
-        this._weekRow.value.text = _('%s tokens').format(formatTokens(lastSevenDays));
-        this._lifetimeRow.value.text = _('%s tokens').format(formatTokens(summary.lifetimeTokens));
-        this._streakRow.value.text = summary.currentStreakDays === null ||
+        this._statRows.today.value.text = _('%s tokens').format(formatTokens(today));
+        this._statRows.week.value.text = _('%s tokens').format(formatTokens(lastSevenDays));
+        this._statRows.lifetime.value.text = _('%s tokens').format(formatTokens(summary.lifetimeTokens));
+        this._statRows.streak.value.text = summary.currentStreakDays === null ||
             summary.currentStreakDays === undefined
             ? '—'
             : _('%d days').format(summary.currentStreakDays);
 
         const credits = limits?.credits;
         if (credits?.hasCredits || credits?.unlimited || credits?.balance !== undefined) {
-            this._creditsRow.value.text = credits.unlimited
+            this._statRows.credits.value.text = credits.unlimited
                 ? _('Unlimited')
                 : String(credits.balance ?? '—');
-            this._creditsRow.actor.show();
-        } else {
-            this._creditsRow.actor.hide();
         }
 
+        const resetCredits = data.rateLimits?.rateLimitResetCredits;
+        this._statRows.resets.value.text = resetCredits?.availableCount === undefined
+            ? '—'
+            : String(resetCredits.availableCount);
+        const earliestExpiry = resetCredits?.credits
+            ?.filter(credit => credit.status === 'available' && credit.expiresAt)
+            .map(credit => credit.expiresAt)
+            .sort((a, b) => a - b)[0];
+        this._statRows.resetExpiry.value.text = formatRemaining(earliestExpiry);
+
+        this._applyFieldPreferences();
         this._updatePanelLabel();
     }
 
@@ -339,6 +374,24 @@ class UsageIndicator extends PanelMenu.Button {
 
     _applyPanelPreferences() {
         this._panelIcon.visible = this._settings.get_boolean('show-icon');
+    }
+
+    _applyFieldPreferences() {
+        const order = this._settings.get_strv('field-order');
+        const visible = new Set(this._settings.get_strv('visible-fields'));
+        const fields = Object.keys(this._statRows);
+        for (const field of fields) {
+            const row = this._statRows[field];
+            const limits = this._lastData.rateLimits?.rateLimits;
+            const hasResetData = this._lastData.rateLimits?.rateLimitResetCredits !== undefined;
+            row.actor.visible = visible.has(field) &&
+                (field !== 'credits' || limits?.credits !== undefined) &&
+                (!['resets', 'resetExpiry'].includes(field) || hasResetData);
+        }
+
+        const ordered = [...order.filter(field => fields.includes(field)),
+            ...fields.filter(field => !order.includes(field))];
+        ordered.forEach((field, index) => this.menu.moveMenuItem(this._statRows[field].item, 3 + index));
     }
 
     _resetTimer() {

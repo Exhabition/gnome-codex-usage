@@ -42,6 +42,73 @@ export default class CodexUsagePreferences extends ExtensionPreferences {
         appearance.add(display);
         page.add(appearance);
 
+        const fields = ['today', 'week', 'lifetime', 'streak', 'credits', 'resets', 'resetExpiry'];
+        const fieldGroup = new Adw.PreferencesGroup({
+            title: _('Usage fields'),
+            description: _('Choose which fields appear in the menu and set their order.'),
+        });
+        const fieldRows = new Map();
+        const updateFields = () => {
+            const order = settings.get_strv('field-order');
+            const ordered = [...order.filter(field => fields.includes(field)),
+                ...fields.filter(field => !order.includes(field))];
+            for (const [index, field] of ordered.entries()) {
+                const controls = fieldRows.get(field);
+                const enabled = settings.get_strv('visible-fields').includes(field);
+                if (controls.toggle.active !== enabled)
+                    controls.toggle.active = enabled;
+                controls.up.sensitive = index > 0;
+                controls.down.sensitive = index < ordered.length - 1;
+                fieldGroup.remove(controls.row);
+                fieldGroup.add(controls.row);
+            }
+        };
+        const labels = {
+            today: _('Today'),
+            week: _('Last 7 days'),
+            lifetime: _('Lifetime'),
+            streak: _('Current streak'),
+            credits: _('Credits remaining'),
+            resets: _('Resets remaining'),
+            resetExpiry: _('Reset expiring in'),
+        };
+        for (const field of fields) {
+            const row = new Adw.ActionRow({title: labels[field]});
+            const controls = new Gtk.Box({spacing: 6});
+            const toggle = new Gtk.Switch({valign: Gtk.Align.CENTER});
+            toggle.connect('notify::active', () => {
+                const visible = settings.get_strv('visible-fields');
+                const next = toggle.active
+                    ? [...new Set([...visible, field])]
+                    : visible.filter(value => value !== field);
+                settings.set_strv('visible-fields', next);
+            });
+            const up = new Gtk.Button({icon_name: 'go-up-symbolic', valign: Gtk.Align.CENTER});
+            const down = new Gtk.Button({icon_name: 'go-down-symbolic', valign: Gtk.Align.CENTER});
+            const move = direction => {
+                const current = [...settings.get_strv('field-order')];
+                const index = current.indexOf(field);
+                const target = index + direction;
+                if (index < 0 || target < 0 || target >= current.length)
+                    return;
+                [current[index], current[target]] = [current[target], current[index]];
+                settings.set_strv('field-order', current);
+            };
+            up.connect('clicked', () => move(-1));
+            down.connect('clicked', () => move(1));
+            controls.append(toggle);
+            controls.append(up);
+            controls.append(down);
+            row.add_suffix(controls);
+            row.activatable_widget = toggle;
+            fieldRows.set(field, {row, toggle, up, down});
+            fieldGroup.add(row);
+        }
+        settings.connect('changed::visible-fields', updateFields);
+        settings.connect('changed::field-order', updateFields);
+        updateFields();
+        page.add(fieldGroup);
+
         const connection = new Adw.PreferencesGroup({
             title: _('Connection'),
             description: _('The extension uses your existing Codex CLI sign-in. It never reads authentication files directly.'),
@@ -82,12 +149,12 @@ export default class CodexUsagePreferences extends ExtensionPreferences {
         const about = new Adw.PreferencesGroup({title: _('About')});
         const dashboard = new Adw.ActionRow({
             title: _('Official Codex usage dashboard'),
-            subtitle: 'chatgpt.com/codex/settings/usage',
+            subtitle: 'chatgpt.com/codex/cloud/settings/analytics',
             activatable: true,
         });
         dashboard.add_suffix(new Gtk.Image({icon_name: 'external-link-symbolic'}));
         dashboard.connect('activated', () =>
-            Gtk.UriLauncher.new('https://chatgpt.com/codex/settings/usage').launch(window, null, null));
+            Gtk.UriLauncher.new('https://chatgpt.com/codex/cloud/settings/analytics').launch(window, null, null));
         about.add(dashboard);
 
         const repository = new Adw.ActionRow({

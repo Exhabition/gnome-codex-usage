@@ -24,5 +24,13 @@
       <default>''</default>
       <summary>Codex executable name or absolute path</summary>
     </key>
+    <key name="visible-fields" type="as">
+      <default>['today', 'week', 'lifetime', 'streak', 'credits', 'resets', 'resetExpiry']</default>
+      <summary>Usage fields shown in the menu</summary>
+    </key>
+    <key name="field-order" type="as">
+      <default>['today', 'week', 'lifetime', 'streak', 'credits', 'resets', 'resetExpiry']</default>
+      <summary>Usage field order in the menu</summary>
+    </key>
   </schema>
 </schemalist>
