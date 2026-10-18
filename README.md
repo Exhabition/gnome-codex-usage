@@ -1,22 +1,29 @@
-# Codex Usage for GNOME
+# Codex usage for GNOME
 
-A compact GNOME Shell extension that shows Codex quota and token usage in the
-top panel. Its interaction model is inspired by
-[Vitals](https://github.com/corecoding/Vitals): the panel holds the glanceable
-value, while the popup contains details and quick actions.
+A GNOME Shell extension that shows Codex quota and token usage in the top panel
+and menu.
 
-![Codex Usage extension popup showing quota and token usage](static/preview.png)
+## Screenshots
+
+The panel menu shows quota windows, token totals, streak, credits, and reset
+details.
+
+![Codex usage menu in the GNOME panel](static/panel.png)
+
+Preferences let you hide fields and move them up or down to change their order.
+
+![Codex Usage preferences with field toggles and ordering controls](static/settings.png)
 
 ## Features
 
-- Remaining or used percentage for the active Codex quota window
-- Reset countdowns for primary and secondary quota windows
-- Today, seven-day, and lifetime token totals
-- Current usage streak and workspace credits when available
-- Automatic refresh plus refresh-on-open
-- Direct link to the official Codex usage dashboard
-- No credential scraping: data comes from the authenticated local Codex
-  app-server process
+- Show remaining or used quota in the panel, or show today's token total
+- View primary and secondary quota windows with reset countdowns
+- Choose which usage fields appear in the menu and reorder them
+- View token totals, usage streak, credits, and banked resets when available
+- See when the next banked reset expires
+- Refresh on a timer or whenever the menu opens
+- Open the Codex usage dashboard from the menu
+- Reuse the signed-in Codex CLI without reading its credential files
 
 ## Requirements
 
