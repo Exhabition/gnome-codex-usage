@@ -8,11 +8,14 @@ and menu.
 The panel menu shows quota windows, token totals, streak, credits, and reset
 details.
 
-![Codex usage menu in the GNOME panel](static/panel.png)
+<img src="static/panel.png" alt="Codex usage menu in the GNOME panel, showing 75% remaining" width="360">
 
 Preferences let you hide fields and move them up or down to change their order.
 
-![Codex Usage preferences with field toggles and ordering controls](static/settings.png)
+<img src="static/settings.png" alt="Codex Usage preferences with field toggles and ordering controls" width="620">
+
+The blurred background in the panel screenshot comes from Blur my Shell. Panel
+appearance depends on your GNOME theme and settings.
 
 ## Features
 
